@@ -52,6 +52,8 @@ SickSafetyscannersLifeCycle::SickSafetyscannersLifeCycle(const std::string& node
   // read parameters!
   initialize_parameters();
   load_parameters();
+
+  timer_ptr = this->create_wall_timer(1s, std::bind(&SickSafetyscannersLifeCycle::timer_callback, this));
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -225,6 +227,7 @@ void SickSafetyscannersLifeCycle::load_parameters()
   this->get_parameter<std::string>("sensor_ip", sensor_ip);
   RCLCPP_INFO(node_logger, "sensor_ip: %s", sensor_ip.c_str());
   m_sensor_ip = boost::asio::ip::address_v4::from_string(sensor_ip);
+  ping_ip = "timeout 0.2 ping -c 1 " + sensor_ip;
 
   std::string interface_ip;
   this->get_parameter<std::string>("interface_ip", interface_ip);
@@ -535,6 +538,39 @@ bool SickSafetyscannersLifeCycle::getFieldData(
   }
 
   return true;
+}
+
+// Scanner state changers
+void SickSafetyscannersLifeCycle::timer_callback()
+{
+  bool status = ping();
+  if (prev_status && !status){
+    change_state(false);
+  }
+  else if (!prev_status && status){
+    change_state(true);
+  }
+  prev_status = status;
+}
+
+bool SickSafetyscannersLifeCycle::ping(){
+  int x = system(ping_ip.c_str());
+  if (x==0){
+    return true;
+  }else{
+    return false;
+  }
+}
+
+void SickSafetyscannersLifeCycle::change_state(bool is_open){
+  if (is_open){
+    this->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+    this->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+  }
+  else{
+    this->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
+    this->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP);
+  }
 }
 
 

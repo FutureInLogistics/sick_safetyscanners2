@@ -58,6 +58,8 @@
 
 #include <string>
 
+using namespace std::chrono_literals;
+
 namespace sick {
 
 class SickSafetyscannersLifeCycle : public rclcpp_lifecycle::LifecycleNode
@@ -140,6 +142,15 @@ private:
     std::shared_ptr<sick_safetyscanners2_interfaces::srv::FieldData::Response> response);
   void readPersistentConfig();
   void readTypeCodeSettings();
+
+  // Scanner pinger, state changer, callback
+  bool prev_status;
+  std::string ping_ip;
+  rclcpp::TimerBase::SharedPtr timer_ptr;
+
+  void timer_callback();
+  bool ping();
+  void change_state(bool);
 };
 } // namespace sick
 
