@@ -227,7 +227,7 @@ void SickSafetyscannersLifeCycle::load_parameters()
   this->get_parameter<std::string>("sensor_ip", sensor_ip);
   RCLCPP_INFO(node_logger, "sensor_ip: %s", sensor_ip.c_str());
   m_sensor_ip = boost::asio::ip::address_v4::from_string(sensor_ip);
-  ping_ip = "timeout 0.2 ping -c 1 " + sensor_ip;
+  ping_ip = "timeout 0.2 ping -c 1 " + sensor_ip + " > nul";
 
   std::string interface_ip;
   this->get_parameter<std::string>("interface_ip", interface_ip);
